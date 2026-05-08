@@ -19,10 +19,14 @@ MODEL_PATH = PROJECT_ROOT / "models" / "solana_next_day_high.joblib"
 
 def _prediction_api_url() -> str | None:
     """Return an optional deployed API URL from Streamlit secrets."""
+    env_url = os.getenv("PREDICTION_API_URL")
+    if env_url:
+        return env_url
+
     try:
         return st.secrets.get("PREDICTION_API_URL")
-    except FileNotFoundError:
-        return os.getenv("PREDICTION_API_URL")
+    except (FileNotFoundError, KeyError):
+        return None
 
 
 @st.cache_resource

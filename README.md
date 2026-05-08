@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Live App](https://img.shields.io/badge/Live%20App-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://solana-price-prediction-tuannm3812.streamlit.app/)
 [![Model](https://img.shields.io/badge/Model-Anchored%20Residual-4F46E5)](https://scikit-learn.org/)
 [![Tests](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-46A5D1)](https://docs.astral.sh/ruff/)
@@ -11,7 +12,11 @@
 
 <sub>Image: [Solana cryptocurrency two.jpg](https://commons.wikimedia.org/wiki/File:Solana_cryptocurrency_two.jpg) by Clearus, licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).</sub>
 
-Production-ready Python project for predicting Solana's next-day high price from OHLCV market data. The repository contains a reusable modeling package, a Streamlit dashboard, an optional FastAPI prediction service, and the original notebook retained as experiment history.
+Production-ready Solana price prediction project with live Kraken market data, an anchored residual model, and a deployable Streamlit dashboard.
+
+Live app: https://solana-price-prediction-tuannm3812.streamlit.app/
+
+This repository contains a reusable modeling package, a Streamlit dashboard, an optional FastAPI prediction service, and a notebook-based training workflow.
 
 ## What This Project Does
 
