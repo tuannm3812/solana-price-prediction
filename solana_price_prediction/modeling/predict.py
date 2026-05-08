@@ -19,7 +19,7 @@ def predict_next_high(model, raw_history: pd.DataFrame) -> float:
 @app.command()
 def main(
     input_path: Path = PROCESSED_DATA_DIR / "solana_model_data.parquet",
-    model_path: Path = MODELS_DIR / "xgboost_solana_v1.joblib",
+    model_path: Path = MODELS_DIR / "solana_next_day_high.joblib",
     predictions_path: Path = PROCESSED_DATA_DIR / "solana_latest_prediction.csv",
 ) -> None:
     """Predict the next-day high using the final row of a history dataset."""

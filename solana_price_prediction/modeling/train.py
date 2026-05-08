@@ -4,12 +4,17 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.base import RegressorMixin
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import typer
 from xgboost import XGBRegressor
 
 from solana_price_prediction.config import MODELS_DIR, PROCESSED_DATA_DIR
 from solana_price_prediction.features import TARGET_COLUMN, select_feature_columns
+from solana_price_prediction.modeling.estimators import (
+    DeltaHighRegressor,
+    PersistenceHighRegressor,
+)
 
 app = typer.Typer(help="Train the production Solana next-day high model.")
 
@@ -54,8 +59,8 @@ def train_xgboost(
     validation_df: pd.DataFrame,
     test_df: pd.DataFrame,
     target_col: str = TARGET_COLUMN,
-) -> tuple[XGBRegressor, pd.DataFrame, RegressionMetrics]:
-    """Train and evaluate the XGBoost regressor."""
+) -> tuple[RegressorMixin, pd.DataFrame, RegressionMetrics]:
+    """Train and evaluate an anchored XGBoost residual model."""
     features = select_feature_columns(train_df)
     X_train = train_df[features]
     y_train = train_df[target_col]
@@ -64,16 +69,41 @@ def train_xgboost(
     X_test = test_df[features]
     y_test = test_df[target_col]
 
-    model = XGBRegressor(
-        n_estimators=1000,
-        learning_rate=0.05,
-        max_depth=5,
-        early_stopping_rounds=50,
-        random_state=42,
-        n_jobs=-1,
+    xgb_delta = DeltaHighRegressor(
+        XGBRegressor(
+            n_estimators=500,
+            learning_rate=0.02,
+            max_depth=3,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=2.0,
+            reg_lambda=5.0,
+            random_state=42,
+            n_jobs=-1,
+        ),
+        residual_clip=20.0,
     )
-    model.fit(X_train, y_train, eval_set=[(X_validation, y_validation)], verbose=False)
+    xgb_delta.fit(X_train, y_train)
+    validation_mae = mean_absolute_error(y_validation, xgb_delta.predict(X_validation))
 
+    persistence = PersistenceHighRegressor()
+    persistence.fit(X_train, y_train)
+    persistence_validation_mae = mean_absolute_error(
+        y_validation,
+        persistence.predict(X_validation),
+    )
+
+    if validation_mae < persistence_validation_mae * 0.98:
+        model = xgb_delta
+    else:
+        model = PersistenceHighRegressor()
+        model.fit(pd.concat([X_train, X_validation]), pd.concat([y_train, y_validation]))
+
+    if isinstance(model, DeltaHighRegressor):
+        model.fit(
+            pd.concat([X_train, X_validation], ignore_index=True),
+            pd.concat([y_train, y_validation], ignore_index=True),
+        )
     predictions = model.predict(X_test)
     results = test_df.copy()
     results["predicted_high"] = predictions
@@ -91,7 +121,7 @@ def train_xgboost(
 @app.command()
 def main(
     features_path: Path = PROCESSED_DATA_DIR / "solana_features.parquet",
-    model_path: Path = MODELS_DIR / "xgboost_solana_v1.joblib",
+    model_path: Path = MODELS_DIR / "solana_next_day_high.joblib",
     results_path: Path = PROCESSED_DATA_DIR / "solana_predictions.parquet",
     validation_size: float = 0.15,
     test_size: float = 0.15,

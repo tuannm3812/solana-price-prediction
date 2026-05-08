@@ -7,8 +7,9 @@ import requests
 import typer
 
 from solana_price_prediction.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
+from solana_price_prediction.kraken import fetch_kraken_ohlc, kraken_since_timestamp
 
-app = typer.Typer(help="Build cleaned Solana modeling datasets from local files or URLs.")
+app = typer.Typer(help="Build cleaned Solana modeling datasets from local files, URLs, or Kraken.")
 
 
 def sniff_delimiter(sample: str) -> str:
@@ -75,8 +76,22 @@ def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def load_solana_data(data_dir: Path | None = None, url: str | None = None) -> pd.DataFrame:
-    """Load Solana data from a URL or combine all CSV files from a directory."""
+def load_solana_data(
+    data_dir: Path | None = None,
+    url: str | None = None,
+    kraken_pair: str | None = None,
+    kraken_interval: int = 1440,
+    kraken_lookback_days: int = 720,
+) -> pd.DataFrame:
+    """Load Solana data from Kraken, a URL, or local CSV files."""
+    if kraken_pair:
+        since_timestamp = kraken_since_timestamp(kraken_lookback_days)
+        return fetch_kraken_ohlc(
+            pair=kraken_pair,
+            interval=kraken_interval,
+            since_timestamp=since_timestamp,
+        )
+
     if url:
         return normalize_column_names(load_solana_data_from_url(url))
 
@@ -125,10 +140,24 @@ def main(
         None,
         help="Optional downloadable CSV, JSON, or parquet URL. Takes precedence over input_dir.",
     ),
+    kraken_pair: str | None = typer.Option(
+        None,
+        help="Optional Kraken pair such as SOLUSD. Takes precedence over input_url and input_dir.",
+    ),
+    kraken_interval: int = typer.Option(1440, help="Kraken candle interval in minutes."),
+    kraken_lookback_days: int = typer.Option(720, help="Number of days to request from Kraken."),
     output_path: Path = PROCESSED_DATA_DIR / "solana_model_data.parquet",
 ) -> None:
     """Load Solana market data and write a cleaned parquet dataset."""
-    df = clean_solana_data(load_solana_data(input_dir, url=input_url))
+    df = clean_solana_data(
+        load_solana_data(
+            input_dir,
+            url=input_url,
+            kraken_pair=kraken_pair,
+            kraken_interval=kraken_interval,
+            kraken_lookback_days=kraken_lookback_days,
+        )
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_path, index=False)
     typer.echo(f"Wrote {len(df):,} cleaned rows to {output_path}")

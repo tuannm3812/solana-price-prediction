@@ -73,12 +73,11 @@ def add_features(df: pd.DataFrame, drop_missing: bool = True) -> pd.DataFrame:
 
 
 def select_feature_columns(df: pd.DataFrame) -> list[str]:
-    """Return numeric feature columns while excluding dates, labels, and identifiers."""
-    return [
-        column
-        for column in df.columns
-        if column not in NON_FEATURE_COLUMNS and pd.api.types.is_numeric_dtype(df[column])
-    ]
+    """Return the production feature columns in the same order used for inference."""
+    missing = [column for column in EXPECTED_FEATURES if column not in df.columns]
+    if missing:
+        raise ValueError(f"Feature table is missing required columns: {missing}")
+    return EXPECTED_FEATURES
 
 
 class SolanaFeatureEngineer(BaseEstimator, TransformerMixin):
