@@ -2,7 +2,7 @@
 # GLOBALS                                                                       #
 #################################################################################
 
-PROJECT_NAME = advmla_assignment_3
+PROJECT_NAME = solana_price_prediction
 PYTHON_VERSION = 3.11
 PYTHON_INTERPRETER = python
 
@@ -15,7 +15,7 @@ PYTHON_INTERPRETER = python
 .PHONY: requirements
 requirements:
 	$(PYTHON_INTERPRETER) -m pip install -U pip
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+	$(PYTHON_INTERPRETER) -m pip install -e ".[dev]"
 	
 
 
@@ -53,7 +53,22 @@ format:
 ## Make dataset
 .PHONY: data
 data: requirements
-	$(PYTHON_INTERPRETER) advmla_assignment_3/dataset.py
+	$(PYTHON_INTERPRETER) -m solana_price_prediction.dataset
+
+## Build feature table
+.PHONY: features
+features: requirements
+	$(PYTHON_INTERPRETER) -m solana_price_prediction.features
+
+## Train model
+.PHONY: train
+train: requirements
+	$(PYTHON_INTERPRETER) -m solana_price_prediction.modeling.train
+
+## Run tests
+.PHONY: test
+test: requirements
+	pytest
 
 
 #################################################################################

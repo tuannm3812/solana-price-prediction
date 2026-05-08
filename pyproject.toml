@@ -3,9 +3,9 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "advmla_assignment_3"
-version = "0.0.1"
-description = "A short description of the project."
+name = "solana_price_prediction"
+version = "0.1.0"
+description = "Production-ready Solana next-day high price prediction project."
 authors = [
   { name = "ManhTuan_Nguyen" },
 ]
@@ -13,20 +13,52 @@ authors = [
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    
+    "Programming Language :: Python :: 3.11",
 ]
 requires-python = "~=3.11.0"
+dependencies = [
+    "fastapi==0.111.0",
+    "hyperopt==0.2.7",
+    "joblib==1.4.2",
+    "loguru>=0.7.2",
+    "matplotlib>=3.9.2",
+    "numpy>=1.26.4",
+    "pandas==2.2.2",
+    "plotly>=5.23.0",
+    "pyarrow>=16.1.0",
+    "python-dotenv==1.0.1",
+    "requests==2.32.3",
+    "scikit-learn==1.5.1",
+    "seaborn>=0.13.2",
+    "streamlit==1.36.0",
+    "typer>=0.12.3",
+    "uvicorn==0.30.1",
+    "xgboost==2.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyterlab==4.2.3",
+    "pytest==8.3.3",
+    "ruff>=0.5.5",
+]
+
+[project.scripts]
+solana-build-dataset = "solana_price_prediction.dataset:app"
+solana-build-features = "solana_price_prediction.features:app"
+solana-train = "solana_price_prediction.modeling.train:app"
+solana-predict = "solana_price_prediction.modeling.predict:app"
 
 
 [tool.ruff]
 line-length = 99
-src = ["advmla_assignment_3"]
-include = ["pyproject.toml", "advmla_assignment_3/**/*.py"]
+src = ["solana_price_prediction"]
+include = ["pyproject.toml", "solana_price_prediction/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # Add import sorting
 
 [tool.ruff.lint.isort]
-known-first-party = ["advmla_assignment_3"]
+known-first-party = ["solana_price_prediction"]
 force-sort-within-sections = true
 

@@ -1,24 +1,14 @@
 # app/utils.py
-import requests
 import pandas as pd
+import requests
 import streamlit as st
-from datetime import datetime, timezone
 
 # Kraken Public Endpoint
 KRAKEN_OHLC = "https://api.kraken.com/0/public/OHLC"
 
 @st.cache_data(ttl=60)
 def fetch_kraken_data(pair: str = "SOLUSD", interval: int = 1440) -> pd.DataFrame:
-    """
-    Fetch OHLCV data from Kraken.
-    
-    Args:
-        pair (str): 'SOLUSD', 'XBTUSD', 'ETHUSD'.
-        interval (int): Minutes (1440 = Daily).
-        
-    Returns:
-        pd.DataFrame: Columns [date, open, high, low, close, volume]
-    """
+    """Fetch OHLCV data from Kraken."""
     params = {"pair": pair, "interval": interval}
     
     try:
