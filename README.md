@@ -1,100 +1,138 @@
-# Advanced Data Product: Cryptocurrency Prediction
+# Solana Price Prediction
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-009688?logo=fastapi&logoColor=white)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.36+-FF4B4B?logo=streamlit&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Complete-success)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![XGBoost](https://img.shields.io/badge/Model-XGBoost-FF6600)](https://xgboost.readthedocs.io/)
+[![Tests](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
+[![Code Style](https://img.shields.io/badge/Code%20Style-Ruff-46A5D1)](https://docs.astral.sh/ruff/)
 
-![Hero Image](https://www.bankrate.com/2022/07/07151503/Cryptocurrency-statistics.jpeg?auto=webp&optimize=high&crop=16:9&width=912)
+![Solana hero image](docs/assets/solana-hero.jpg)
 
-## 📖 Project Overview
+<sub>Image: [Solana cryptocurrency two.jpg](https://commons.wikimedia.org/wiki/File:Solana_cryptocurrency_two.jpg) by Clearus, licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).</sub>
 
-This project is a comprehensive Data Product designed to assist cryptocurrency investors. It combines historical market data with machine learning predictions to forecast the **Next-Day High Price** of major tokens.
+Production-ready Python project for predicting Solana's next-day high price from OHLCV market data. The repository contains a reusable modeling package, a FastAPI prediction service, a Streamlit dashboard, and the original notebook retained as experiment history.
 
-The architecture is split into three core components:
-1.  **Experimentation:** Jupyter notebooks for EDA, Feature Engineering, and Model Training (XGBoost/LightGBM).
-2.  **API Backend:** A FastAPI service deployed on Render to serve ML predictions.
-3.  **Dashboard UI:** A Streamlit application visualizing real-time Kraken data and AI forecasts.
+## What This Project Does
 
----
+- Builds a cleaned Solana modeling dataset from a downloadable URL or local CSV exports.
+- Generates technical indicators: SMA, RSI, volatility, and lagged price/volume features.
+- Trains an XGBoost regressor with chronological train/validation/test splitting.
+- Serves live predictions through FastAPI using CoinGecko market data.
+- Displays Kraken market data and API predictions in Streamlit.
 
-## 🏗️ Repository Structure
-
-This repository is organized as a monorepo containing both the backend and frontend services.
+## Repository Layout
 
 ```text
-advmla_assignment_3/
-├── assignment_3_api/       # 🧠 Backend: FastAPI Service
-│   ├── app/                # Application Logic & Pipelines
-│   ├── models/             # Trained Model Artifacts (.joblib)
-│   └── Dockerfile          # Container config for Render
-│
-├── assignment_3_streamlit/ # 💻 Frontend: User Interface
-│   ├── app/
-│   │   ├── students/       # Individual Student Components
-│   │   └── main.py         # App Entry Point
-│   └── Dockerfile
-│
-├── notebooks/              # 🔬 Experimentation & Training
-│   └── Solana_XGBoost.ipynb
-│
-└── models/                 # Shared Model Storage
+solana-price-prediction/
+|-- solana_price_prediction/     # Reusable Python package
+|   |-- dataset.py               # Raw CSV loading and cleaning
+|   |-- features.py              # Feature engineering shared by training and API
+|   `-- modeling/
+|       |-- train.py             # XGBoost training CLI
+|       `-- predict.py           # Batch inference CLI
+|-- api/                         # FastAPI service
+|-- dashboard/                   # Streamlit dashboard
+|-- notebooks/                   # Original exploratory notebook
+|-- models/                      # Trained model artifacts
+|-- tests/                       # Unit tests
+|-- pyproject.toml               # Package metadata and dependencies
+`-- Makefile                     # Common developer commands
 ```
 
-🪙 Supported Assets & Status
+## Quick Start
 
-This project is a group effort. Below is the status of each cryptocurrency module.
-
-| Asset    | Symbol | Status        | Assignee         | Model               |
-|---------:|:------:|:-------------:|:----------------:|:-------------------:|
-| Solana   | SOL    | ✅ Live        | Student 25739083 | XGBoost Regressor   |
-| Bitcoin  | BTC    | 🚧 In Progress | Group Member     | Pending             |
-| Ethereum | ETH    | 🚧 In Progress | Group Member     | Pending             |
-| Ripple   | XRP    | 🚧 In Progress | Group Member     | Pending             |
-
-## 🚀 Quick Start Guide
-1. Clone the Repository
+Create an environment with Python 3.11, then install the project:
 
 ```bash
-git clone https://github.com/YourUsername/advmla_assignment_3.git
-cd advmla_assignment_3
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -U pip
+python -m pip install -r requirements.txt
 ```
 
-2. Running the API (Backend)
-
-The UI relies on the API for predictions. Run this first.
+Run the tests:
 
 ```bash
-cd assignment_3_api
-# Install Dependencies
-pip install -r requirements.txt
-# Run Server
+pytest
+```
+
+## Training Pipeline
+
+Use a downloadable CSV, JSON, or parquet URL:
+
+```bash
+python -m solana_price_prediction.dataset --input-url "https://example.com/solana.csv"
+python -m solana_price_prediction.features
+python -m solana_price_prediction.modeling.train
+```
+
+Or place raw Solana CSV files under `data/raw/Solana/`, then run:
+
+```bash
+python -m solana_price_prediction.dataset
+python -m solana_price_prediction.features
+python -m solana_price_prediction.modeling.train
+```
+
+Training uses chronological splits by default:
+
+- 70% train
+- 15% validation for early stopping
+- 15% test for final reporting
+
+Override the split ratios when needed:
+
+```bash
+python -m solana_price_prediction.modeling.train --validation-size 0.2 --test-size 0.2
+```
+
+Default outputs:
+
+- Clean dataset: `data/processed/solana_model_data.parquet`
+- Feature table: `data/processed/solana_features.parquet`
+- Model artifact: `models/xgboost_solana_v1.joblib`
+- Test predictions: `data/processed/solana_predictions.parquet`
+
+The `data/` directory is intentionally ignored by Git.
+
+## Run The API
+
+```bash
+cd api
+python -m pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-API will be available at: http://localhost:8000
+Useful endpoints:
 
-3. Running the Dashboard (Frontend)
+- `GET /health`
+- `GET /predict/solana`
+- `GET /docs`
 
-Open a new terminal window for the UI.
+## Run The Dashboard
+
+In a separate terminal:
 
 ```bash
-cd assignment_3_streamlit
-# Install Dependencies
-pip install -r requirements.txt
-# Run Streamlit
+cd dashboard
+python -m pip install -r requirements.txt
 streamlit run app/main.py
 ```
 
-Dashboard will open at: http://localhost:8501
+The dashboard expects the API at `http://127.0.0.1:8000` by default. Override it with:
 
-## 🛠️ Tech Stack
-Language: Python 3.11
+```bash
+$env:PREDICTION_API_URL="https://your-api.example.com"
+```
 
-Machine Learning: XGBoost, Hyperopt, Scikit-Learn
+## From Notebook To Project
 
-Web Frameworks: FastAPI, Streamlit
+The notebook logic has been moved into importable modules:
 
-Data Sources: CoinGecko API (History), Kraken API (Real-time)
+- Data loading and cleaning: `solana_price_prediction.dataset`
+- Target and feature creation: `solana_price_prediction.features`
+- Model training and metrics: `solana_price_prediction.modeling.train`
+- Inference: `solana_price_prediction.modeling.predict`
 
-DevOps: Docker, Render
+The notebook remains in `notebooks/` as an experiment record, while production code lives in the package and is covered by tests.
