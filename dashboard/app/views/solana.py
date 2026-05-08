@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+import joblib
 import pandas as pd
 import plotly.graph_objects as go
 import requests
@@ -10,12 +11,28 @@ import streamlit as st
 sys.path.append(str(Path(__file__).parent.parent))
 from utils import fetch_kraken_data  # noqa: E402
 
-API_URL = os.getenv("PREDICTION_API_URL", "http://127.0.0.1:8000")
+from solana_price_prediction.modeling.predict import predict_next_high  # noqa: E402
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+MODEL_PATH = PROJECT_ROOT / "models" / "solana_next_day_high.joblib"
+
+
+def _prediction_api_url() -> str | None:
+    """Return an optional deployed API URL from Streamlit secrets."""
+    try:
+        return st.secrets.get("PREDICTION_API_URL")
+    except FileNotFoundError:
+        return os.getenv("PREDICTION_API_URL")
+
+
+@st.cache_resource
+def _load_local_model():
+    return joblib.load(MODEL_PATH)
 
 
 def render_solana_tab() -> None:
     st.markdown("## Solana (SOL) Intelligence")
-    st.markdown("Live market data with an XGBoost next-day high forecast.")
+    st.markdown("Live market data with an Anchored Residual next-day high forecast.")
     st.divider()
 
     with st.spinner("Fetching live market data..."):
@@ -98,15 +115,17 @@ def _render_prediction_panel(df: pd.DataFrame) -> None:
     c1, c2 = st.columns([1, 2])
 
     with c1:
-        st.info("Model: XGBoost Regressor\n\nTarget: next-day high\n\nSignals: RSI, SMA, volatility, lags")
+        st.info(
+            "Model: anchored residual regressor\n\n"
+            "Target: next-day high\n\n"
+            "Signals: RSI, SMA, volatility, lags"
+        )
         if st.button("Predict Tomorrow's High", type="primary", use_container_width=True):
-            with st.spinner("Calling prediction API..."):
+            with st.spinner("Generating prediction..."):
                 try:
-                    response = requests.get(f"{API_URL}/predict/solana", timeout=8)
-                    response.raise_for_status()
-                    st.session_state["pred_result"] = response.json()
+                    st.session_state["pred_result"] = _predict_from_api_or_local(df)
                 except Exception as exc:
-                    st.error(f"Prediction API request failed: {exc}")
+                    st.error(f"Prediction failed: {exc}")
 
     with c2:
         if "pred_result" not in st.session_state:
@@ -123,3 +142,28 @@ def _render_prediction_panel(df: pd.DataFrame) -> None:
             diff = predicted_high - current_high
             direction = "higher" if diff > 0 else "lower"
             st.caption(f"Prediction is ${abs(diff):.2f} {direction} than the latest daily high.")
+
+
+def _predict_from_api_or_local(df: pd.DataFrame) -> dict[str, str | float]:
+    api_url = _prediction_api_url()
+    if api_url:
+        try:
+            response = requests.get(f"{api_url.rstrip('/')}/predict/solana", timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            st.warning(f"Prediction API unavailable, using bundled model instead. Details: {exc}")
+
+    if df.empty:
+        raise ValueError("Cannot run local prediction without market data.")
+
+    model = _load_local_model()
+    raw_history = df.rename(columns={"date": "timestamp"}).copy()
+    raw_history["marketcap"] = 0.0
+    prediction = predict_next_high(model, raw_history)
+    next_date = pd.to_datetime(raw_history.iloc[-1]["timestamp"]) + pd.Timedelta(days=1)
+    return {
+        "token": "SOL",
+        "prediction_date": next_date.strftime("%Y-%m-%d"),
+        "predicted_high": prediction,
+    }

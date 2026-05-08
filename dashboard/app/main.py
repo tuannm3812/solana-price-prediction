@@ -1,6 +1,6 @@
 import streamlit as st
 
-from students.sol_25739083 import render_solana_tab
+from views.solana import render_solana_tab
 
 st.set_page_config(
     page_title="Crypto Investment Dashboard",

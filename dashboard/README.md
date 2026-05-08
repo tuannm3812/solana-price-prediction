@@ -1,20 +1,30 @@
-# Crypto Investment Dashboard
+# Solana Streamlit Dashboard
 
-Streamlit dashboard for viewing Solana market data and requesting next-day high predictions from the FastAPI service.
+Streamlit dashboard for live Solana market data and next-day high predictions.
 
-## Run Locally
+## Local Run
 
-Start the API first, then run:
+From the repository root:
 
 ```bash
 python -m pip install -r requirements.txt
-streamlit run app/main.py
+streamlit run dashboard/app/main.py
 ```
 
-The app uses `http://127.0.0.1:8000` by default. Override the API URL with:
+The dashboard works without a separate API. It fetches Kraken OHLCV candles and loads the bundled model from `models/solana_next_day_high.joblib`.
 
-```bash
-$env:PREDICTION_API_URL="https://your-api.example.com"
+## Optional API
+
+If you deploy the FastAPI service separately, add this Streamlit secret:
+
+```toml
+PREDICTION_API_URL = "https://your-api.example.com"
 ```
 
-Market data comes from Kraken. Predictions come from `GET /predict/solana`.
+When configured, the dashboard calls the API first and falls back to the bundled model if the API is unavailable.
+
+## Streamlit Community Cloud
+
+- Main file path: `dashboard/app/main.py`
+- Python version: `3.11`
+- Secrets: none required
