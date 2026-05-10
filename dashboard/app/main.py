@@ -3,9 +3,11 @@ from pathlib import Path
 
 import streamlit as st
 
+APP_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+for path in (APP_ROOT, PROJECT_ROOT):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from views.solana import render_solana_tab
 
